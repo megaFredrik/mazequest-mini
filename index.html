@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MazeQuest Mini</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17261F;
+    --stone:#2E4A3C;
+    --stone-lit:#3F6853;
+    --sand:#F2E3C4;
+    --sand-dark:#E2CFA8;
+    --amber:#F2A03D;
+    --coral:#E8564B;
+    --mint:#58C8A8;
+    --plum:#8B6BD6;
+    --cream:#FBF3E2;
+    --display:'Fredoka',system-ui,sans-serif;
+    --mono:'Space Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #234034 0%, transparent 60%),
+      var(--ink);
+    color:var(--cream);
+    font-family:var(--display);
+    display:flex;align-items:center;justify-content:center;
+    padding:16px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .shell{width:100%;max-width:880px}
+
+  /* ---------- shared controls ---------- */
+  button{font-family:var(--display);cursor:pointer;border:0}
+  .btn{
+    background:var(--amber);color:#2A1A05;
+    font-size:19px;font-weight:700;letter-spacing:.2px;
+    padding:14px 26px;border-radius:14px;
+    box-shadow:0 5px 0 #C97F26;
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .btn:active{transform:translateY(4px);box-shadow:0 1px 0 #C97F26}
+  .btn.ghost{
+    background:transparent;color:var(--cream);
+    box-shadow:inset 0 0 0 2px rgba(251,243,226,.28);
+    font-size:16px;padding:12px 20px;
+  }
+  .btn.ghost:active{transform:translateY(2px)}
+  :focus-visible{outline:3px solid var(--mint);outline-offset:3px}
+
+  /* ---------- menu / end cards ---------- */
+  .card{
+    background:rgba(24,42,34,.92);
+    border:2px solid rgba(88,200,168,.22);
+    border-radius:24px;
+    padding:34px 30px;
+    text-align:center;
+  }
+  h1{
+    font-size:clamp(38px,7vw,64px);font-weight:700;margin:0;line-height:.95;
+    letter-spacing:-1px;
+    text-shadow:0 4px 0 rgba(0,0,0,.35);
+  }
+  h1 .mini{display:block;font-size:.36em;letter-spacing:7px;color:var(--mint);margin-top:10px;font-weight:600}
+  .tagline{color:rgba(251,243,226,.62);font-size:16px;margin:14px 0 22px;max-width:46ch;margin-inline:auto;line-height:1.5}
+  .rules{
+    display:grid;gap:10px;text-align:left;max-width:420px;margin:0 auto 26px;
+    font-size:15px;color:rgba(251,243,226,.78);
+  }
+  .rules div{display:flex;gap:12px;align-items:center}
+  .rules b{color:var(--cream);font-weight:600}
+  .chipkey{
+    font-family:var(--mono);font-size:12px;background:rgba(251,243,226,.1);
+    border-radius:7px;padding:5px 9px;min-width:64px;text-align:center;flex:none;
+    color:var(--mint);
+  }
+  .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+  /* ---------- game view ---------- */
+  #game{display:none}
+  .hud{
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    background:rgba(24,42,34,.9);
+    border:2px solid rgba(88,200,168,.2);
+    border-radius:16px;padding:10px 12px;margin-bottom:10px;
+  }
+  .stat{
+    display:flex;align-items:center;gap:7px;
+    font-family:var(--mono);font-size:14px;
+    background:rgba(0,0,0,.22);border-radius:10px;padding:8px 11px;
+  }
+  .stat .lbl{font-family:var(--display);font-size:12px;letter-spacing:.5px;color:rgba(251,243,226,.5);text-transform:uppercase}
+  .hud .spacer{flex:1}
+  .hud .btn.ghost{padding:9px 14px;font-size:14px}
+  .dim{opacity:.28}
+
+  .stage{position:relative;border-radius:20px;overflow:hidden;background:#12201A;
+         border:2px solid rgba(88,200,168,.2)}
+  canvas{display:block;width:100%;height:auto;image-rendering:auto}
+  #toast{
+    position:absolute;left:50%;top:14px;transform:translateX(-50%) translateY(-14px);
+    background:rgba(23,38,31,.94);color:var(--cream);
+    border:2px solid rgba(88,200,168,.35);
+    padding:9px 18px;border-radius:12px;font-size:15px;font-weight:500;
+    opacity:0;transition:opacity .18s ease, transform .18s ease;pointer-events:none;
+    max-width:88%;text-align:center;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .overlay{
+    position:absolute;inset:0;display:none;place-items:center;
+    background:rgba(18,32,26,.86);backdrop-filter:blur(3px);padding:20px;
+  }
+  .overlay.show{display:grid}
+  .overlay .card{border:0;background:none;padding:0}
+  .overlay h2{font-size:clamp(30px,6vw,46px);margin:0 0 6px}
+  .scores{display:flex;gap:10px;justify-content:center;margin:18px 0 24px;flex-wrap:wrap}
+  .scores .stat{font-size:16px}
+
+  /* ---------- touch pad ---------- */
+  .pad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(3,64px);
+       gap:8px;justify-content:center;margin-top:14px}
+  .pad button{
+    background:rgba(251,243,226,.09);color:var(--cream);border-radius:14px;
+    font-size:22px;box-shadow:inset 0 0 0 2px rgba(251,243,226,.14);
+  }
+  .pad button:active{background:rgba(88,200,168,.28)}
+  .pad .act{color:var(--mint);font-size:15px;font-weight:700}
+  @media (hover:hover) and (pointer:fine){ .pad{display:none} }
+  .hint{text-align:center;color:rgba(251,243,226,.4);font-size:13px;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ===== MENU ===== -->
+  <div id="menu" class="card">
+    <canvas id="pipPreview" width="220" height="150" style="width:220px;height:150px;margin-bottom:6px"></canvas>
+    <h1>MazeQuest<span class="mini">M I N I</span></h1>
+    <p class="tagline">Pip's lantern is the only light down here. Find three crystals, open the way, and reach the portal before the spikes find you.</p>
+    <div class="rules">
+      <div><span class="chipkey">↑ ↓ ← →</span><span>Move Pip one tile at a time</span></div>
+      <div><span class="chipkey">CLICK</span><span>Pull a <b>lever</b>, or step to a neighbouring tile</span></div>
+      <div><span class="chipkey">GOAL</span><span>3 crystals, then the <b>portal</b></span></div>
+    </div>
+    <div class="row">
+      <button class="btn" id="startBtn">Start adventure</button>
+      <button class="btn ghost" id="soundBtn">Sound: on</button>
+    </div>
+  </div>
+
+  <!-- ===== GAME ===== -->
+  <div id="game">
+    <div class="hud">
+      <div class="stat"><span class="lbl">Crystals</span><span id="hudGems">0/3</span></div>
+      <div class="stat" id="hudKeyWrap"><span class="lbl">Key</span><span id="hudKey">—</span></div>
+      <div class="stat"><span class="lbl">Hearts</span><span id="hudHp">♥♥♥</span></div>
+      <div class="stat"><span class="lbl">Time</span><span id="hudTime">0:00</span></div>
+      <div class="stat"><span class="lbl">Moves</span><span id="hudMoves">0</span></div>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="restartBtn">Restart</button>
+      <button class="btn ghost" id="menuBtn">Menu</button>
+    </div>
+
+    <div class="stage">
+      <canvas id="board" width="840" height="600"></canvas>
+      <div id="toast"></div>
+
+      <div class="overlay" id="winOverlay">
+        <div class="card">
+          <h2>You made it out</h2>
+          <p class="tagline">The portal closes behind Pip. Somewhere above, daylight.</p>
+          <div class="scores">
+            <div class="stat"><span class="lbl">Time</span><span id="winTime">0:00</span></div>
+            <div class="stat"><span class="lbl">Moves</span><span id="winMoves">0</span></div>
+            <div class="stat"><span class="lbl">Hearts</span><span id="winHp">♥♥♥</span></div>
+          </div>
+          <div class="row">
+            <button class="btn" data-again>Play again</button>
+            <button class="btn ghost" data-menu>Menu</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay" id="loseOverlay">
+        <div class="card">
+          <h2>The lantern goes out</h2>
+          <p class="tagline">The spikes got Pip. Watch their rhythm — they retract for a beat and a half.</p>
+          <div class="row">
+            <button class="btn" data-again>Try again</button>
+            <button class="btn ghost" data-menu>Menu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pad">
+      <span></span>
+      <button data-dir="up" aria-label="Move up">▲</button>
+      <span></span>
+      <button data-dir="left" aria-label="Move left">◀</button>
+      <button class="act" data-dir="use" aria-label="Use">USE</button>
+      <button data-dir="right" aria-label="Move right">▶</button>
+      <span></span>
+      <button data-dir="down" aria-label="Move down">▼</button>
+      <span></span>
+    </div>
+    <p class="hint">Arrow keys or WASD to move · E to use a lever · click a tile to inspect it</p>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ============================================================
+   LEVEL DATA
+   # wall  . floor  S start  E exit  K key  D door
+   W lever W  G gate  X spike  * crystal
+   Reachability verified: lever+crystals open from start,
+   key only past the gate, exit only past the door.
+   ============================================================ */
+const LAYOUT = [
+"#####################",
+"#S....#########..#..#",
+"#..*..#########...K.#",
+"#.#.#.######.G..#...#",
+"#.....######.##.....#",
+"#.###.##.....########",
+"#X###....#.#.########",
+"#.######..*..########",
+"#X######.#.#.XX.#####",
+"#.######.....##D#####",
+"#..#..##.######.....#",
+"#...*.##.######..#..#",
+"#.W.#....######..#..#",
+"#.....#########....E#",
+"#####################",
+];
+
+const TILE = 40, COLS = 21, ROWS = 15;
+const TOTAL_GEMS = 3;
+const STEP_MS = 110;          // tile-to-tile tween
+const SPIKE_CYCLE = 2000;     // ms
+const SPIKE_UP_AT = 1150;     // extended from here to end of cycle
+const IFRAME_MS = 1200;
+
+const C = getComputedStyle(document.documentElement);
+const col = n => C.getPropertyValue(n).trim();
+const PAL = {
+  ink:col('--ink'), stone:col('--stone'), stoneLit:col('--stone-lit'),
+  sand:col('--sand'), sandDark:col('--sand-dark'), amber:col('--amber'),
+  coral:col('--coral'), mint:col('--mint'), plum:col('--plum'), cream:col('--cream')
+};
+
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ============================================================
+   AUDIO — generated, no asset files
+   ============================================================ */
+let audioOn = true, actx = null;
+function beep(freq, dur = .09, type = 'triangle', gain = .05){
+  if (!audioOn) return;
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(gain, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + dur);
+    o.connect(g).connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur);
+  }catch(e){/* audio is optional */}
+}
+const SFX = {
+  step: () => beep(220, .05, 'square', .02),
+  gem:  () => { beep(880,.09); setTimeout(()=>beep(1320,.11),70); },
+  key:  () => { beep(660,.1);  setTimeout(()=>beep(990,.14),90); },
+  lever:() => beep(300,.13,'sawtooth',.04),
+  door: () => { beep(180,.16,'sawtooth',.05); setTimeout(()=>beep(520,.16),120); },
+  hurt: () => beep(120,.22,'sawtooth',.07),
+  win:  () => [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.2),i*110)),
+  lose: () => [400,330,260,180].forEach((f,i)=>setTimeout(()=>beep(f,.22,'sawtooth',.05),i*130)),
+  bump: () => beep(90,.05,'square',.03)
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let S = null;
+function newState(){
+  return {
+    grid: LAYOUT.map(r => r.split('')),
+    px:1, py:1,                 // grid position
+    rx:1, ry:1,                 // render position (tweened)
+    fx:1, fy:1,                 // tween origin
+    tween:1,                    // 0..1
+    dir:'down',
+    gems:0, hasKey:false, hp:3,
+    gateOpen:false, doorOpen:false,
+    lastSafe:{x:1,y:1},
+    hurtUntil:0,
+    moves:0,
+    started:0, elapsed:0,
+    over:null,                  // null | 'win' | 'lose'
+    t:0
+  };
+}
+function tileAt(x,y){
+  if (y<0||y>=ROWS||x<0||x>=COLS) return '#';
+  return S.grid[y][x];
+}
+function walkable(x,y){
+  const ch = tileAt(x,y);
+  if (ch === '#') return false;
+  if (ch === 'G') return S.gateOpen;
+  if (ch === 'D') return S.doorOpen || S.hasKey;
+  return true;
+}
+function findTile(ch){
+  for (let y=0;y<ROWS;y++) for (let x=0;x<COLS;x++) if (S.grid[y][x]===ch) return {x,y};
+  return null;
+}
+const spikesOut = () => (S.t % SPIKE_CYCLE) >= SPIKE_UP_AT;
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+const toastEl = document.getElementById('toast');
+let toastTimer = 0;
+function toast(msg, ms = 1900){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms);
+}
+
+/* ============================================================
+   MOVEMENT + INTERACTION
+   ============================================================ */
+const DIRS = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] };
+
+function tryMove(dir){
+  if (!S || S.over) return;
+  if (S.tween < 1) return;                 // still animating a step
+  const [dx,dy] = DIRS[dir];
+  S.dir = dir;
+  const nx = S.px + dx, ny = S.py + dy;
+  const ch = tileAt(nx,ny);
+
+  if (ch === '#'){ SFX.bump(); return; }
+
+  if (ch === 'G' && !S.gateOpen){
+    SFX.bump(); toast('The gate is down. Find the lever.'); return;
+  }
+  if (ch === 'D' && !S.doorOpen){
+    if (!S.hasKey){ SFX.bump(); toast('Locked. The key is somewhere past the gate.'); return; }
+    S.doorOpen = true; S.hasKey = false;
+    SFX.door(); toast('The key turns. The door swings open.');
+    updateHUD();
+    return;                                 // unlocking costs the move
+  }
+
+  // commit the step
+  S.fx = S.rx; S.fy = S.ry;
+  S.px = nx; S.py = ny;
+  S.tween = 0;
+  S.moves++;
+  SFX.step();
+  onEnter(nx,ny);
+  updateHUD();
+}
+
+function onEnter(x,y){
+  const ch = S.grid[y][x];
+
+  if (ch === '*'){
+    S.grid[y][x] = '.';
+    S.gems++;
+    SFX.gem();
+    toast(S.gems < TOTAL_GEMS
+      ? `Crystal ${S.gems} of ${TOTAL_GEMS}.`
+      : 'All three crystals. The portal will take you now.');
+  }
+  else if (ch === 'K'){
+    S.grid[y][x] = '.';
+    S.hasKey = true;
+    SFX.key();
+    toast('An iron key. Something down here is locked.');
+  }
+  else if (ch === 'E'){
+    if (S.gems >= TOTAL_GEMS){ win(); return; }
+    toast(`The portal is dim. ${TOTAL_GEMS - S.gems} crystal${TOTAL_GEMS-S.gems>1?'s':''} still out there.`);
+  }
+
+  if (ch !== 'X') S.lastSafe = {x,y};
+}
+
+function useNearby(){
+  if (!S || S.over) return;
+  const lever = findTile('W');
+  if (!lever) return;
+  const d = Math.abs(lever.x - S.px) + Math.abs(lever.y - S.py);
+  if (d <= 1) pullLever();
+  else toast('Nothing to use here.');
+}
+
+function pullLever(){
+  S.gateOpen = !S.gateOpen;
+  SFX.lever();
+  toast(S.gateOpen ? 'The gate grinds upward.' : 'The gate slams back down.');
+}
+
+function hurt(){
+  if (S.t < S.hurtUntil || S.over) return;
+  S.hp--;
+  S.hurtUntil = S.t + IFRAME_MS;
+  SFX.hurt();
+  updateHUD();
+  if (S.hp <= 0){ lose(); return; }
+  // knock back to the last tile that was not a spike
+  S.fx = S.rx; S.fy = S.ry;
+  S.px = S.lastSafe.x; S.py = S.lastSafe.y;
+  S.tween = 0;
+  toast(`Spikes! ${S.hp} heart${S.hp>1?'s':''} left.`);
+}
+
+/* ============================================================
+   CLICK ON BOARD — inspect, pull levers, step one tile
+   ============================================================ */
+canvas.addEventListener('click', e => {
+  if (!S || S.over) return;
+  const r = canvas.getBoundingClientRect();
+  const x = Math.floor((e.clientX - r.left) * (canvas.width / r.width) / TILE);
+  const y = Math.floor((e.clientY - r.top) * (canvas.height / r.height) / TILE);
+  if (x<0||y<0||x>=COLS||y>=ROWS) return;
+  const ch = tileAt(x,y);
+  const dist = Math.abs(x - S.px) + Math.abs(y - S.py);
+
+  if (ch === 'W'){
+    if (dist <= 1) pullLever();
+    else toast('Too far. Walk over to the lever first.');
+    return;
+  }
+  if (dist === 1){                       // click-to-step: mouse-only play
+    if (x > S.px) tryMove('right');
+    else if (x < S.px) tryMove('left');
+    else if (y > S.py) tryMove('down');
+    else tryMove('up');
+    return;
+  }
+  const DESC = {
+    '#':'Cold stone. Not going through that.',
+    '.':'Empty floor.', 'S':'Where Pip woke up.',
+    '*':'A crystal, humming faintly.',
+    'K':'An iron key on the ground.',
+    'D': S.doorOpen ? 'The door, open.' : 'A locked door. It wants a key.',
+    'G': S.gateOpen ? 'The gate, raised.' : 'A barred gate. A lever controls it.',
+    'X': 'Spike holes in the floor. They breathe in and out.',
+    'E': S.gems >= TOTAL_GEMS ? 'The portal, wide open.' : 'The exit portal, waiting on crystals.'
+  };
+  toast(DESC[ch] || 'Nothing here.');
+});
+
+/* ============================================================
+   INPUT
+   ============================================================ */
+const held = new Set();
+const KEYMAP = {
+  ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right',
+  w:'up', s:'down', a:'left', d:'right', W:'up', S:'down', A:'left', D:'right'
+};
+addEventListener('keydown', e => {
+  if (document.getElementById('game').style.display !== 'block') return;
+  if (e.key === 'e' || e.key === 'E' || e.key === ' '){ e.preventDefault(); useNearby(); return; }
+  const dir = KEYMAP[e.key];
+  if (!dir) return;
+  e.preventDefault();
+  held.add(dir);
+  tryMove(dir);
+});
+addEventListener('keyup', e => { const d = KEYMAP[e.key]; if (d) held.delete(d); });
+addEventListener('blur', () => held.clear());
+
+document.querySelectorAll('.pad button').forEach(b => {
+  const act = () => b.dataset.dir === 'use' ? useNearby() : tryMove(b.dataset.dir);
+  b.addEventListener('click', act);
+});
+
+/* ============================================================
+   HUD
+   ============================================================ */
+const el = id => document.getElementById(id);
+function updateHUD(){
+  el('hudGems').textContent = `${S.gems}/${TOTAL_GEMS}`;
+  el('hudKey').textContent = S.hasKey ? '🔑' : (S.doorOpen ? 'used' : '—');
+  el('hudKeyWrap').classList.toggle('dim', !S.hasKey && !S.doorOpen);
+  el('hudHp').textContent = '♥'.repeat(Math.max(0,S.hp)) + '♡'.repeat(Math.max(0,3-S.hp));
+  el('hudMoves').textContent = S.moves;
+}
+const fmt = ms => `${Math.floor(ms/60000)}:${String(Math.floor(ms/1000)%60).padStart(2,'0')}`;
+
+/* ============================================================
+   DRAWING
+   ============================================================ */
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function drawFloor(x,y){
+  const px = x*TILE, py = y*TILE;
+  ctx.fillStyle = ((x+y) % 2) ? PAL.sand : PAL.sandDark;
+  ctx.fillRect(px,py,TILE,TILE);
+  ctx.fillStyle = 'rgba(23,38,31,.05)';
+  ctx.fillRect(px, py+TILE-3, TILE, 3);
+}
+
+function drawWall(x,y){
+  const px = x*TILE, py = y*TILE;
+  ctx.fillStyle = PAL.stone;
+  roundRect(px+1,py+1,TILE-2,TILE-2,7); ctx.fill();
+  ctx.fillStyle = PAL.stoneLit;
+  roundRect(px+4,py+4,TILE-8,TILE-14,5); ctx.fill();
+}
+
+function drawGem(x,y,t){
+  const cx = x*TILE+TILE/2, cy = y*TILE+TILE/2 + Math.sin(t/380 + x)*2.5;
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(Math.sin(t/700+x)*0.25);
+  ctx.fillStyle = PAL.mint;
+  ctx.beginPath();
+  ctx.moveTo(0,-11); ctx.lineTo(9,0); ctx.lineTo(0,12); ctx.lineTo(-9,0);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  ctx.beginPath(); ctx.moveTo(0,-11); ctx.lineTo(4,-2); ctx.lineTo(0,2); ctx.lineTo(-4,-2);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawKey(x,y,t){
+  const cx = x*TILE+TILE/2, cy = y*TILE+TILE/2 + Math.sin(t/400)*2;
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(-0.5);
+  ctx.strokeStyle = PAL.amber; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(-5,-4,6,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-1,1); ctx.lineTo(9,11); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(4,10); ctx.lineTo(8,6); ctx.stroke();
+  ctx.restore();
+}
+
+function drawLever(x,y){
+  const px = x*TILE, py = y*TILE;
+  ctx.fillStyle = '#4A3A24';
+  roundRect(px+9,py+24,TILE-18,10,4); ctx.fill();
+  ctx.save();
+  ctx.translate(px+TILE/2, py+28);
+  ctx.rotate(S.gateOpen ? 0.7 : -0.7);
+  ctx.strokeStyle = '#8C6B3F'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-17); ctx.stroke();
+  ctx.fillStyle = S.gateOpen ? PAL.mint : PAL.coral;
+  ctx.beginPath(); ctx.arc(0,-19,6,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawGate(x,y){
+  const px = x*TILE, py = y*TILE;
+  drawFloor(x,y);
+  const open = S.gateOpen;
+  ctx.fillStyle = open ? 'rgba(88,200,168,.30)' : '#6E7B86';
+  const h = open ? 9 : TILE-6;
+  for (let i=0;i<3;i++){
+    roundRect(px+7+i*10, py+3, 6, h, 3); ctx.fill();
+  }
+  ctx.fillStyle = open ? PAL.mint : '#8E9BA6';
+  roundRect(px+3, py+2, TILE-6, 6, 3); ctx.fill();
+}
+
+function drawDoor(x,y){
+  const px = x*TILE, py = y*TILE;
+  drawFloor(x,y);
+  if (S.doorOpen){
+    ctx.fillStyle = 'rgba(242,160,61,.22)';
+    roundRect(px+3,py+3,TILE-6,TILE-6,6); ctx.fill();
+    ctx.fillStyle = PAL.amber;
+    roundRect(px+3,py+3,7,TILE-6,4); ctx.fill();
+    return;
+  }
+  ctx.fillStyle = '#7A5433';
+  roundRect(px+3,py+2,TILE-6,TILE-4,6); ctx.fill();
+  ctx.fillStyle = '#8F6640';
+  roundRect(px+7,py+6,TILE-14,TILE-12,4); ctx.fill();
+  ctx.fillStyle = PAL.amber;
+  ctx.beginPath(); ctx.arc(px+TILE-12, py+TILE/2, 4, 0, Math.PI*2); ctx.fill();
+}
+
+function drawSpikes(x,y,t){
+  const px = x*TILE, py = y*TILE;
+  drawFloor(x,y);
+  const phase = (t % SPIKE_CYCLE) / SPIKE_CYCLE;
+  const out = spikesOut();
+  const warn = !out && phase > 0.42;
+  ctx.fillStyle = 'rgba(23,38,31,.22)';
+  for (let i=0;i<3;i++) ctx.fillRect(px+8+i*10, py+TILE-8, 6, 4);
+  if (warn){
+    ctx.fillStyle = 'rgba(232,86,75,.30)';
+    roundRect(px+3,py+3,TILE-6,TILE-6,6); ctx.fill();
+  }
+  if (out){
+    const grow = Math.min(1, (phase - SPIKE_UP_AT/SPIKE_CYCLE) * 9);
+    ctx.fillStyle = '#C9D3D8';
+    for (let i=0;i<3;i++){
+      const bx = px+8+i*10, h = 22*Math.min(1,grow);
+      ctx.beginPath();
+      ctx.moveTo(bx, py+TILE-6);
+      ctx.lineTo(bx+3, py+TILE-6-h);
+      ctx.lineTo(bx+6, py+TILE-6);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = PAL.coral;
+    ctx.fillRect(px+6, py+TILE-8, TILE-12, 3);
+  }
+}
+
+function drawPortal(x,y,t){
+  const cx = x*TILE+TILE/2, cy = y*TILE+TILE/2;
+  drawFloor(x,y);
+  const ready = S.gems >= TOTAL_GEMS;
+  const base = ready ? PAL.plum : 'rgba(139,107,214,.35)';
+  for (let i=3;i>=1;i--){
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6*i + (ready ? Math.sin(t/300+i)*1.6 : 0), 0, Math.PI*2);
+    ctx.fillStyle = i===1 ? (ready ? PAL.cream : 'rgba(251,243,226,.4)') : base;
+    ctx.globalAlpha = i===3 ? .35 : (i===2 ? .7 : 1);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawPip(t){
+  const cx = S.rx*TILE + TILE/2;
+  const bob = reduceMotion ? 0 : Math.sin(t/260)*1.8;
+  const cy = S.ry*TILE + TILE/2 + bob;
+  const hurtFlash = S.t < S.hurtUntil && Math.floor(S.t/110) % 2 === 0;
+
+  // lantern glow on the floor
+  const g = ctx.createRadialGradient(cx,cy,4,cx,cy,120);
+  g.addColorStop(0,'rgba(242,160,61,.26)');
+  g.addColorStop(1,'rgba(242,160,61,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx,cy,120,0,Math.PI*2); ctx.fill();
+
+  // shadow
+  ctx.fillStyle = 'rgba(23,38,31,.2)';
+  ctx.beginPath(); ctx.ellipse(cx, cy+15, 13, 5, 0, 0, Math.PI*2); ctx.fill();
+
+  // body
+  ctx.fillStyle = hurtFlash ? PAL.coral : '#2F8F79';
+  roundRect(cx-14, cy-15, 28, 29, 10); ctx.fill();
+  ctx.fillStyle = hurtFlash ? '#F2867E' : '#3FB79A';
+  roundRect(cx-11, cy-12, 22, 14, 7); ctx.fill();
+
+  // eyes, offset by facing
+  const ox = S.dir==='left' ? -3 : S.dir==='right' ? 3 : 0;
+  const oy = S.dir==='up' ? -2 : S.dir==='down' ? 2 : 0;
+  ctx.fillStyle = PAL.cream;
+  ctx.beginPath(); ctx.arc(cx-6+ox, cy-4+oy, 5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx+6+ox, cy-4+oy, 5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = PAL.ink;
+  ctx.beginPath(); ctx.arc(cx-6+ox*1.5, cy-4+oy, 2.4, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx+6+ox*1.5, cy-4+oy, 2.4, 0, Math.PI*2); ctx.fill();
+
+  // the lantern itself
+  const lx = cx + 17, ly = cy + 4 + (reduceMotion ? 0 : Math.sin(t/220)*2);
+  ctx.strokeStyle = '#8C6B3F'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(cx+11, cy-2); ctx.lineTo(lx, ly-6); ctx.stroke();
+  ctx.fillStyle = PAL.amber;
+  roundRect(lx-5, ly-6, 10, 12, 3); ctx.fill();
+  ctx.fillStyle = 'rgba(255,246,214,.95)';
+  roundRect(lx-2.5, ly-3.5, 5, 7, 2); ctx.fill();
+}
+
+function drawVignette(){
+  const cx = S.rx*TILE + TILE/2, cy = S.ry*TILE + TILE/2;
+  const g = ctx.createRadialGradient(cx,cy,90,cx,cy,540);
+  g.addColorStop(0,'rgba(18,32,26,0)');
+  g.addColorStop(1,'rgba(18,32,26,.5)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+}
+
+function render(t){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = PAL.ink;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  for (let y=0;y<ROWS;y++){
+    for (let x=0;x<COLS;x++){
+      const ch = S.grid[y][x];
+      switch(ch){
+        case '#': drawWall(x,y); break;
+        case 'G': drawGate(x,y); break;
+        case 'D': drawDoor(x,y); break;
+        case 'X': drawSpikes(x,y,t); break;
+        case 'E': drawPortal(x,y,t); break;
+        case '*': drawFloor(x,y); drawGem(x,y,t); break;
+        case 'K': drawFloor(x,y); drawKey(x,y,t); break;
+        case 'W': drawFloor(x,y); drawLever(x,y); break;
+        default:  drawFloor(x,y);
+      }
+    }
+  }
+  drawPip(t);
+  drawVignette();
+}
+
+/* ============================================================
+   LOOP
+   ============================================================ */
+let last = 0, repeatAt = 0;
+function loop(now){
+  requestAnimationFrame(loop);
+  if (!S) return;
+  const dt = Math.min(50, now - last); last = now;
+  S.t += dt;
+
+  if (!S.over){
+    S.elapsed = S.t - S.started;
+    el('hudTime').textContent = fmt(S.elapsed);
+  }
+
+  // tween between tiles
+  if (S.tween < 1){
+    S.tween = Math.min(1, S.tween + dt / (reduceMotion ? 1 : STEP_MS));
+    const e = 1 - Math.pow(1 - S.tween, 3);   // ease-out cubic
+    S.rx = S.fx + (S.px - S.fx) * e;
+    S.ry = S.fy + (S.py - S.fy) * e;
+  } else {
+    S.rx = S.px; S.ry = S.py;
+    // held-key auto repeat so long corridors are not a chore
+    if (!S.over && held.size && S.t > repeatAt){
+      tryMove([...held][held.size-1]);
+      repeatAt = S.t + 130;
+    }
+  }
+
+  // spike damage resolves on the tile you are standing on
+  if (!S.over && S.tween > .55 && tileAt(S.px,S.py) === 'X' && spikesOut()) hurt();
+
+  render(S.t);
+}
+requestAnimationFrame(loop);
+
+/* ============================================================
+   SCREENS
+   ============================================================ */
+const menuEl = document.getElementById('menu');
+const gameEl = document.getElementById('game');
+const winOv  = document.getElementById('winOverlay');
+const loseOv = document.getElementById('loseOverlay');
+
+function startGame(){
+  S = newState();
+  S.started = 0; S.t = 0;
+  winOv.classList.remove('show'); loseOv.classList.remove('show');
+  menuEl.style.display = 'none';
+  gameEl.style.display = 'block';
+  updateHUD();
+  toast('Find three crystals, then the portal.', 2600);
+}
+function toMenu(){
+  gameEl.style.display = 'none';
+  menuEl.style.display = 'block';
+  S = newState();
+}
+function win(){
+  S.over = 'win';
+  SFX.win();
+  el('winTime').textContent = fmt(S.elapsed);
+  el('winMoves').textContent = S.moves;
+  el('winHp').textContent = '♥'.repeat(S.hp) + '♡'.repeat(3-S.hp);
+  winOv.classList.add('show');
+}
+function lose(){
+  S.over = 'lose';
+  SFX.lose();
+  loseOv.classList.add('show');
+}
+
+el('startBtn').addEventListener('click', startGame);
+el('restartBtn').addEventListener('click', startGame);
+el('menuBtn').addEventListener('click', toMenu);
+document.querySelectorAll('[data-again]').forEach(b => b.addEventListener('click', startGame));
+document.querySelectorAll('[data-menu]').forEach(b => b.addEventListener('click', toMenu));
+el('soundBtn').addEventListener('click', e => {
+  audioOn = !audioOn;
+  e.target.textContent = `Sound: ${audioOn ? 'on' : 'off'}`;
+  if (audioOn) SFX.gem();
+});
+
+/* ============================================================
+   MENU PREVIEW — the same Pip, drawn small
+   ============================================================ */
+(() => {
+  const pc = document.getElementById('pipPreview');
+  const p = pc.getContext('2d');
+  let f = 0;
+  (function tick(){
+    requestAnimationFrame(tick);
+    f += 16;
+    p.clearRect(0,0,pc.width,pc.height);
+    const cx = pc.width/2, cy = pc.height/2 + Math.sin(f/260)*3;
+    const g = p.createRadialGradient(cx,cy,4,cx,cy,80);
+    g.addColorStop(0,'rgba(242,160,61,.25)'); g.addColorStop(1,'rgba(242,160,61,0)');
+    p.fillStyle = g; p.beginPath(); p.arc(cx,cy,80,0,Math.PI*2); p.fill();
+    p.fillStyle = 'rgba(0,0,0,.18)';
+    p.beginPath(); p.ellipse(cx,cy+26,20,6,0,0,Math.PI*2); p.fill();
+    const rr=(x,y,w,h,r)=>{p.beginPath();p.moveTo(x+r,y);p.arcTo(x+w,y,x+w,y+h,r);p.arcTo(x+w,y+h,x,y+h,r);p.arcTo(x,y+h,x,y,r);p.arcTo(x,y,x+w,y,r);p.closePath();};
+    p.fillStyle='#2F8F79'; rr(cx-22,cy-24,44,46,16); p.fill();
+    p.fillStyle='#3FB79A'; rr(cx-17,cy-19,34,22,11); p.fill();
+    const ox=Math.sin(f/900)*3;
+    p.fillStyle=PAL.cream;
+    p.beginPath(); p.arc(cx-9+ox,cy-7,8,0,Math.PI*2); p.fill();
+    p.beginPath(); p.arc(cx+9+ox,cy-7,8,0,Math.PI*2); p.fill();
+    p.fillStyle=PAL.ink;
+    p.beginPath(); p.arc(cx-9+ox*1.6,cy-6,3.8,0,Math.PI*2); p.fill();
+    p.beginPath(); p.arc(cx+9+ox*1.6,cy-6,3.8,0,Math.PI*2); p.fill();
+    const lx=cx+28, ly=cy+8+Math.sin(f/220)*3;
+    p.strokeStyle='#8C6B3F'; p.lineWidth=3;
+    p.beginPath(); p.moveTo(cx+18,cy-2); p.lineTo(lx,ly-9); p.stroke();
+    p.fillStyle=PAL.amber; rr(lx-8,ly-9,16,19,5); p.fill();
+    p.fillStyle='rgba(255,246,214,.95)'; rr(lx-4,ly-5,8,11,3); p.fill();
+  })();
+})();
+
+// preload a state so the loop has something to draw against if opened directly
+S = newState();
+})();
+</script>
+</body>
+</html>

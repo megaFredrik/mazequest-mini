@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MazeQuest Mini — UI mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#17261F; --stone:#2E4A3C; --stone-lit:#3F6853; --sand:#F2E3C4;
+  --sand-dark:#E2CFA8; --amber:#F2A03D; --coral:#E8564B; --mint:#58C8A8;
+  --plum:#8B6BD6; --cream:#FBF3E2;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--cream);font-family:'Fredoka',sans-serif;padding:40px 20px}
+.wrap{max-width:1000px;margin:0 auto}
+header{border-bottom:2px solid rgba(88,200,168,.2);padding-bottom:24px;margin-bottom:44px}
+h1{font-size:44px;margin:0 0 8px;letter-spacing:-1px}
+header p{color:rgba(251,243,226,.55);margin:0;max-width:60ch;line-height:1.55}
+.screen{margin-bottom:56px}
+.screen > h2{font-size:14px;letter-spacing:3px;text-transform:uppercase;color:var(--mint);margin:0 0 4px}
+.screen > .note{color:rgba(251,243,226,.5);font-size:14px;margin:0 0 16px;max-width:62ch;line-height:1.5}
+.frame{background:#12201A;border:2px solid rgba(88,200,168,.2);border-radius:20px;padding:26px;position:relative}
+
+/* --- menu mock --- */
+.menu-mock{text-align:center;padding:44px 26px}
+.pip{width:78px;height:80px;background:#2F8F79;border-radius:22px;margin:0 auto 18px;position:relative}
+.pip::before,.pip::after{content:'';position:absolute;top:24px;width:20px;height:20px;background:var(--cream);border-radius:50%}
+.pip::before{left:12px} .pip::after{right:12px}
+.lantern{position:absolute;right:-24px;top:34px;width:20px;height:24px;background:var(--amber);border-radius:6px;
+  box-shadow:0 0 28px 10px rgba(242,160,61,.35)}
+.title{font-size:52px;font-weight:700;line-height:.95;letter-spacing:-1px}
+.title small{display:block;font-size:.34em;letter-spacing:8px;color:var(--mint);margin-top:8px}
+.tag{color:rgba(251,243,226,.6);max-width:44ch;margin:14px auto 22px;line-height:1.5;font-size:15px}
+.rules{display:grid;gap:9px;max-width:400px;margin:0 auto 24px;text-align:left;font-size:14px;color:rgba(251,243,226,.75)}
+.rules div{display:flex;gap:12px;align-items:center}
+.k{font-family:'Space Mono',monospace;font-size:11px;background:rgba(251,243,226,.1);color:var(--mint);
+   border-radius:7px;padding:5px 9px;min-width:62px;text-align:center;flex:none}
+.btn{background:var(--amber);color:#2A1A05;font-family:'Fredoka';font-weight:700;font-size:17px;
+     padding:13px 24px;border-radius:13px;border:0;box-shadow:0 5px 0 #C97F26;display:inline-block}
+.btn.ghost{background:transparent;color:var(--cream);box-shadow:inset 0 0 0 2px rgba(251,243,226,.28);font-size:15px}
+
+/* --- hud mock --- */
+.hud{display:flex;gap:9px;flex-wrap:wrap;align-items:center;background:rgba(24,42,34,.9);
+     border:2px solid rgba(88,200,168,.2);border-radius:14px;padding:10px;margin-bottom:12px}
+.stat{display:flex;gap:7px;align-items:center;background:rgba(0,0,0,.22);border-radius:9px;padding:7px 11px;
+      font-family:'Space Mono',monospace;font-size:13px}
+.stat b{font-family:'Fredoka';font-weight:500;font-size:11px;letter-spacing:.5px;
+        color:rgba(251,243,226,.5);text-transform:uppercase}
+.sp{flex:1}
+
+/* --- maze mock (renders the real layout) --- */
+#maze{display:grid;grid-template-columns:repeat(21,1fr);gap:0;border-radius:12px;overflow:hidden;
+      aspect-ratio:21/15;background:var(--ink)}
+#maze i{display:block;aspect-ratio:1/1;position:relative}
+.t-wall{background:var(--stone);box-shadow:inset 0 -5px 0 rgba(0,0,0,.18), inset 0 4px 0 var(--stone-lit)}
+.t-floor{background:var(--sand)} .t-floor.alt{background:var(--sand-dark)}
+.dot{position:absolute;inset:22%;border-radius:4px}
+.d-gem{background:var(--mint);transform:rotate(45deg)}
+.d-key{background:var(--amber);border-radius:50%}
+.d-lever{background:var(--coral);border-radius:50%}
+.d-gate{background:#8E9BA6;inset:8%;border-radius:2px}
+.d-door{background:#7A5433;inset:6%;border-radius:3px}
+.d-spike{background:var(--coral);inset:18%;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.d-exit{background:var(--plum);border-radius:50%;box-shadow:0 0 18px 5px rgba(139,107,214,.5)}
+.d-pip{background:#2F8F79;border-radius:6px;box-shadow:0 0 26px 9px rgba(242,160,61,.3);inset:14%}
+
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:rgba(251,243,226,.6)}
+.legend span{display:flex;gap:7px;align-items:center}
+.sw{width:14px;height:14px;border-radius:4px;display:inline-block}
+
+/* --- win mock --- */
+.win-mock{text-align:center;padding:44px 26px;background:
+  radial-gradient(400px 240px at 50% 40%, rgba(139,107,214,.22), transparent 70%)}
+.scores{display:flex;gap:10px;justify-content:center;margin:18px 0 22px;flex-wrap:wrap}
+
+.callouts{margin-top:18px;display:grid;gap:8px;font-size:13.5px;color:rgba(251,243,226,.62);line-height:1.5}
+.callouts b{color:var(--mint);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>MazeQuest Mini — UI mockups</h1>
+  <p>Three screens, one visual language: moss-green stone, warm sand floors, an amber lantern.
+     These are the reference frames the build was made against. The maze frame below renders the
+     actual level layout used in <code>index.html</code>, so the mockup and the game cannot drift apart.</p>
+</header>
+
+<!-- 1 -->
+<section class="screen">
+  <h2>Screen 01 — Start menu</h2>
+  <p class="note">The job of this screen is to get someone into the maze in one click, and to teach
+     three rules on the way in. Pip is animated in the real build; the lantern glow is the signature element.</p>
+  <div class="frame menu-mock">
+    <div class="pip"><span class="lantern"></span></div>
+    <div class="title">MazeQuest<small>M I N I</small></div>
+    <p class="tag">Pip's lantern is the only light down here. Find three crystals, open the way,
+       and reach the portal before the spikes find you.</p>
+    <div class="rules">
+      <div><span class="k">↑ ↓ ← →</span><span>Move Pip one tile at a time</span></div>
+      <div><span class="k">CLICK</span><span>Pull a lever, or step to a neighbouring tile</span></div>
+      <div><span class="k">GOAL</span><span>3 crystals, then the portal</span></div>
+    </div>
+    <span class="btn">Start adventure</span>
+    <span class="btn ghost">Sound: on</span>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="screen">
+  <h2>Screen 02 — Level interface</h2>
+  <p class="note">HUD strip on top, playfield below. Counters use a mono face so numbers read as
+     instrumentation and never compete with the storybook display type.</p>
+  <div class="frame">
+    <div class="hud">
+      <div class="stat"><b>Crystals</b>2/3</div>
+      <div class="stat"><b>Key</b>🔑</div>
+      <div class="stat"><b>Hearts</b>♥♥♡</div>
+      <div class="stat"><b>Time</b>1:24</div>
+      <div class="stat"><b>Moves</b>73</div>
+      <div class="sp"></div>
+      <span class="btn ghost">Restart</span>
+      <span class="btn ghost">Menu</span>
+    </div>
+    <div id="maze"></div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--stone)"></i>Wall</span>
+      <span><i class="sw" style="background:var(--mint);transform:rotate(45deg)"></i>Crystal</span>
+      <span><i class="sw" style="background:var(--amber);border-radius:50%"></i>Key</span>
+      <span><i class="sw" style="background:var(--coral);border-radius:50%"></i>Lever</span>
+      <span><i class="sw" style="background:#8E9BA6"></i>Gate</span>
+      <span><i class="sw" style="background:#7A5433"></i>Door</span>
+      <span><i class="sw" style="background:var(--coral);clip-path:polygon(50% 0,100% 100%,0 100%)"></i>Spikes</span>
+      <span><i class="sw" style="background:var(--plum);border-radius:50%"></i>Portal</span>
+    </div>
+    <div class="callouts">
+      <div><b>Chain:</b> lever → gate → key → door → portal. Each lock is the only route to the next.</div>
+      <div><b>Danger:</b> spike tiles flash coral for half a beat before they extend, so a patient player is never punished.</div>
+      <div><b>Feedback:</b> a toast appears at the top of the playfield for every pickup, refusal, and unlock.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="screen">
+  <h2>Screen 03 — Win</h2>
+  <p class="note">The run ends with numbers worth beating, and two ways forward. No score inflation,
+     no stars — time, moves, hearts.</p>
+  <div class="frame win-mock">
+    <div class="title" style="font-size:38px">You made it out</div>
+    <p class="tag">The portal closes behind Pip. Somewhere above, daylight.</p>
+    <div class="scores">
+      <div class="stat"><b>Time</b>2:07</div>
+      <div class="stat"><b>Moves</b>118</div>
+      <div class="stat"><b>Hearts</b>♥♥♡</div>
+    </div>
+    <span class="btn">Play again</span>
+    <span class="btn ghost">Menu</span>
+  </div>
+</section>
+</div>
+
+<script>
+const LAYOUT = [
+"#####################",
+"#S....#########..#..#",
+"#..*..#########...K.#",
+"#.#.#.######.G..#...#",
+"#.....######.##.....#",
+"#.###.##.....########",
+"#X###....#.#.########",
+"#.######..*..########",
+"#X######.#.#.XX.#####",
+"#.######.....##D#####",
+"#..#..##.######.....#",
+"#...*.##.######..#..#",
+"#.W.#....######..#..#",
+"#.....#########....E#",
+"#####################",
+];
+const DOT = { '*':'d-gem','K':'d-key','W':'d-lever','G':'d-gate','D':'d-door','X':'d-spike','E':'d-exit' };
+const maze = document.getElementById('maze');
+LAYOUT.forEach((row,y) => [...row].forEach((ch,x) => {
+  const c = document.createElement('i');
+  if (ch === '#') c.className = 't-wall';
+  else {
+    c.className = 't-floor' + ((x+y)%2 ? ' alt' : '');
+    // mid-run snapshot: Pip is in the central hall, two crystals already taken
+    if (x===10 && y===7) c.innerHTML = '<span class="dot d-pip"></span>';
+    else if (ch === '*' && !(x===3&&y===2)) c.innerHTML = '<span class="dot d-gem"></span>';
+    else if (DOT[ch] && ch !== '*') c.innerHTML = `<span class="dot ${DOT[ch]}"></span>`;
+  }
+  maze.appendChild(c);
+}));
+</script>
+</body>
+</html>
