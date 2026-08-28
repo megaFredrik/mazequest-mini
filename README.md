@@ -3,7 +3,9 @@
 A top-down puzzle adventure that runs from a single HTML file. One maze, one
 character, four chained puzzles, three crystals, three minutes.
 
-**Play it:** open `index.html` in any browser — no build, no install, no server.
+**Play it now:** https://megafredrik.github.io/mazequest-mini/
+
+Or open `index.html` locally — no build, no install, no server.
 
 ---
 
